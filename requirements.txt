@@ -7,3 +7,4 @@ python-dotenv>=1.0
 # optional OCR for scanned PDFs (also needs the Tesseract binary installed)
 pytesseract>=0.3.10
 pillow>=10.0
+torchvision

@@ -1,6 +1,7 @@
 """Core RAG pipeline for ASTRA INTEL: PDF -> pages -> chunks -> embeddings -> retrieval -> grounded answer."""
 import io
 import os
+import re
 
 import pymupdf as fitz
 import numpy as np
@@ -11,8 +12,8 @@ from sentence_transformers import SentenceTransformer
 load_dotenv()
 
 EMBED_MODEL = "all-MiniLM-L6-v2"          # small, fast, runs locally on CPU
-LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
-MIN_SCORE = float(os.getenv("MIN_SCORE", "0.25"))  # below this -> "not found in document"
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen3.8-27b")
+MIN_SCORE = float(os.getenv("MIN_SCORE", "0.10"))  # below this -> "not found in document"
 CHUNK_WORDS = 180
 CHUNK_OVERLAP = 40
 TOP_K = 4
@@ -110,10 +111,12 @@ def _chat(messages, max_tokens=500):
         r = _client().chat.completions.create(
             model=LLM_MODEL, messages=messages, temperature=0, max_tokens=max_tokens
         )
-        content = r.choices[0].message.content
-        if not content or not content.strip():
+        content = r.choices[0].message.content or ""
+        # Strip Qwen3 chain-of-thought <think>...</think> blocks before processing
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+        if not content:
             raise DocError("The language model returned an empty response. Please try again.")
-        return content.strip()
+        return content
     except DocError:
         raise
     except Exception as e:
@@ -131,6 +134,31 @@ def summarize(index: DocIndex) -> str:
         ],
         max_tokens=400,
     )
+
+
+def suggest_questions(index: DocIndex, n: int = 4) -> list:
+    """Ask the LLM to generate n relevant questions from the document. Never hardcoded."""
+    picks = sorted(set(int(i) for i in np.linspace(0, len(index.chunks) - 1, min(len(index.chunks), 10))))
+    context = "\n\n".join(f"[Page {index.chunks[i]['page']}] {index.chunks[i]['text']}" for i in picks)
+    try:
+        raw = _chat(
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        f"Based on the document excerpts below, generate exactly {n} concise, specific questions "
+                        "that a reader would likely want to ask. "
+                        "Output ONLY the questions, one per line, no numbering, no bullet points, no extra text."
+                    ),
+                },
+                {"role": "user", "content": context},
+            ],
+            max_tokens=250,
+        )
+        questions = [q.strip("•-– ").strip() for q in raw.strip().splitlines() if q.strip()]
+        return questions[:n]
+    except DocError:
+        return []
 
 
 NOT_FOUND_MSG = "I couldn't find this in the uploaded document."
@@ -153,6 +181,7 @@ def answer(index: DocIndex, question: str, history=None):
     msgs.append({"role": "user", "content": f"Excerpts:\n{context}\n\nQuestion: {question}"})
 
     out = _chat(msgs)
-    if "NOT_FOUND" in out:
+    # Only treat as NOT_FOUND if the LLM's *entire* reply is the sentinel word
+    if out.strip().upper().startswith("NOT_FOUND"):
         return {"answer": NOT_FOUND_MSG, "supported": False, "sources": hits}
     return {"answer": out, "supported": True, "sources": hits}

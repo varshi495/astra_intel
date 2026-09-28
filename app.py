@@ -1,7 +1,7 @@
 """ASTRA INTEL - Streamlit UI. Run: streamlit run app.py"""
 import streamlit as st
 
-from rag import DocError, DocIndex, answer, summarize
+from rag import DocError, DocIndex, answer, summarize, suggest_questions
 
 st.set_page_config(page_title="ASTRA INTEL", page_icon="🛰️", layout="wide")
 st.title(" ASTRA INTEL")
@@ -10,7 +10,9 @@ st.caption("Defence document intelligence: upload a PDF, get a summary, ask ques
 ss = st.session_state
 ss.setdefault("index", None)
 ss.setdefault("summary", None)
-ss.setdefault("history", [])  # list of dicts: q, a, supported, sources
+ss.setdefault("history", [])          # list of dicts: q, a, supported, sources
+ss.setdefault("suggested_questions", [])  # LLM-generated, never hardcoded
+ss.setdefault("pending_question", None)   # set when a suggestion chip is clicked
 
 with st.sidebar:
     st.header("Document")
@@ -21,8 +23,11 @@ with st.sidebar:
                 ss.index = DocIndex(f.getvalue(), f.name)
                 ss.history = []
                 ss.summary = None
+                ss.suggested_questions = []
             with st.spinner("Summarizing..."):
                 ss.summary = summarize(ss.index)
+            with st.spinner("Generating suggested questions..."):
+                ss.suggested_questions = suggest_questions(ss.index)
         except DocError as e:
             st.error(str(e))
     if ss.index:
@@ -38,19 +43,38 @@ if ss.summary:
     with st.expander("📄 Summary", expanded=True):
         st.write(ss.summary)
 
+# Dynamically generated suggestion chips (cleared once the user starts chatting)
+if ss.suggested_questions and not ss.history:
+    st.markdown("**💡 Suggested questions — click to ask:**")
+    cols = st.columns(len(ss.suggested_questions))
+    for i, sq in enumerate(ss.suggested_questions):
+        if cols[i].button(sq, key=f"sq_{i}", use_container_width=True):
+            ss.pending_question = sq
+            st.rerun()
+
 # chat history
 for turn in ss.history:
     with st.chat_message("user"):
         st.write(turn["q"])
     with st.chat_message("assistant"):
         st.write(turn["a"])
-        st.caption("✅ Supported by document" if turn["supported"] else "⚠️ Not supported by document")
+        top_score = turn["sources"][0]["score"] if turn["sources"] else 0
+        if turn["supported"]:
+            st.caption("✅ Supported by document")
+        else:
+            st.caption(f"⚠️ Not supported by document · top similarity: {top_score:.3f} (threshold 0.10)")
         with st.expander("Sources (retrieved passages)"):
             for s in turn["sources"]:
-                st.markdown(f"**Page {s['page']}** · similarity {s['score']:.2f}")
+                st.markdown(f"**Page {s['page']}** · similarity `{s['score']:.3f}`")
                 st.write(s["text"])
 
 q = st.chat_input("Ask something about the document...")
+
+# A suggestion chip was clicked — treat it exactly like a typed question
+if ss.pending_question:
+    q = ss.pending_question
+    ss.pending_question = None
+
 if q:
     try:
         with st.spinner("Searching and answering..."):
