@@ -1,0 +1,9 @@
+streamlit>=1.38
+pymupdf>=1.24
+sentence-transformers>=3.0
+numpy>=1.26
+openai>=1.40
+python-dotenv>=1.0
+# optional OCR for scanned PDFs (also needs the Tesseract binary installed)
+pytesseract>=0.3.10
+pillow>=10.0
