@@ -2,7 +2,7 @@
 import io
 import os
 
-import fitz  # PyMuPDF
+import pymupdf as fitz
 import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -59,7 +59,7 @@ def extract_pages(pdf_bytes: bytes):
         if len(text) < 20:  # probably scanned -> try OCR
             text = _ocr_page(page)
         if text:
-            pages.append((i, text))
+            pages.append((i + 1, text))
     if not pages:
         raise DocError("No readable text found (empty PDF, or scanned without OCR available).")
     return pages
