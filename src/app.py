@@ -9,8 +9,10 @@ st.set_page_config(page_title="ASTRA INTEL", page_icon="🛰️", layout="wide")
 st.html("""
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* Global font */
+  /* Global font & background */
   html, body, [class*="css"] { font-family: 'Inter', system-ui, sans-serif; }
+  .stApp { background-color: #000000 !important; }
+  header[data-testid="stHeader"] { background-color: transparent !important; }
 
   /* Headings */
   h1, h2, h3, h4 {
@@ -19,7 +21,7 @@ st.html("""
   }
 
   /* Sidebar deeper background */
-  [data-testid="stSidebar"] { background-color: #0E1215 !important; }
+  [data-testid="stSidebar"] { background-color: #000000 !important; border-right: 1px solid rgba(184,134,11,0.2) !important; }
 
   /* Primary button gold gradient */
   .stButton > button[kind="primary"] {
@@ -120,7 +122,7 @@ ss.setdefault("pending_question", None)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.image("branding/astra_logo.jpeg", width="stretch")
+    st.image("assets/astra_logo.jpeg", width="stretch")
     st.divider()
     st.header("📂 Document")
     f = st.file_uploader("Upload a PDF", type=["pdf"])
