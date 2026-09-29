@@ -181,7 +181,7 @@ with st.sidebar:
     st.divider()
     st.header("📂 Document")
     
-    uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
+    uploaded_file = st.file_uploader("Upload or drag & drop a PDF", type=["pdf"])
     
     # Trigger processing only when the user clicks 'Process document'
     if uploaded_file and st.button("⚡ Process document", type="primary", use_container_width=True):

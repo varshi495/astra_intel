@@ -20,6 +20,34 @@ ASTRA INTEL is a specialized Retrieval-Augmented Generation (RAG) web applicatio
 
 ---
 
+## System Architecture
+
+```mermaid
+graph TD
+    User([User]) -->|Uploads PDF| UI[Streamlit UI]
+    UI -->|PDF Bytes| RAG[rag.py Pipeline]
+    
+    subgraph Document Ingestion
+        RAG -->|Extract Text| Ext[PyMuPDF / Tesseract OCR]
+        Ext -->|Text| Chunker[Text Chunker]
+        Chunker -->|Chunks| Embedder[Local SentenceTransformer<br>all-MiniLM-L6-v2]
+        Embedder -->|Vector Embeddings| VectorStore[(Local In-Memory<br>Vector Index)]
+    end
+
+    User -->|Asks Question| UI
+    UI -->|Query| RAGSearch[RAG Search]
+    
+    subgraph Query Pipeline
+        RAGSearch -->|Embed Query| Embedder
+        RAGSearch -->|Cosine Similarity| VectorStore
+        VectorStore -->|Top-k Chunks| Context[Context Builder]
+        Context -->|Prompt + Context| LLM[Groq API<br>Qwen LLM]
+        LLM -->|Answer & Citations| UI
+    end
+```
+
+---
+
 ##  Project Structure
 
 ```text
@@ -83,7 +111,7 @@ pip install -r requirements.txt
 
 ### 3. Environment Setup
 
-Create a `.env` file in the root directory and add your Groq API key:
+Create a `.env` file in the root directory and add your Groq API key. You can get an API key from the [Groq Console](https://console.groq.com/keys):
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here
