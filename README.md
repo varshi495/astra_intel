@@ -80,7 +80,7 @@ flowchart TD
     subgraph Ingestion ["📥 Document Ingestion — runs on upload"]
         direction TB
         UP["PDF Upload\nStreamlit sidebar"]
-        EX["extract_pages\nPyMuPDF · Tesseract OCR fallback"]
+        EX["extract_pages\nPyMuPDF"]
         CH["chunk_pages\n180-word windows · 40-word overlap"]
         EM["get_embedder\nall-MiniLM-L6-v2 · SentenceTransformer"]
         VI[("DocIndex\nIn-Memory Vector Store\nnumpy ndarray")]
