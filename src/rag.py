@@ -426,18 +426,22 @@ def suggest_questions(index: DocIndex, n: int = 4) -> List[str]:
 # Step 5: Grounded Answering
 # ==============================================================================
 
-NOT_FOUND_MSG: str = "I couldn't find this in the uploaded document."
+NOT_FOUND_MSG: str = "The uploaded documents do not contain information regarding this topic."
 
 
 def answer(index: DocIndex, question: str, history: Optional[List[Tuple[str, str]]] = None) -> Dict[str, Any]:
     """
-    Answers a question strictly grounded in the uploaded document.
+    Answers a question strictly grounded in the uploaded document(s).
     
     Process:
     1. Search vector index for the top matching chunks.
     2. Check if similarity score exceeds MIN_SCORE. If not, reject query.
-    3. Format context with page tags: "[Page X] ...".
-    4. Provide strict system prompt: "Answer using ONLY excerpts... cite pages (p. X)".
+    3. Format context with document and page tags: "[Doc, Page X] ...".
+    4. Provide strict grounded prompt:
+       - Cite document and page numbers (Document Name, p. X).
+       - Never hallucinate, extrapolate, or invent numbers/statistics.
+       - If a specific statistic/claim is not present, state honestly that the documents
+         do not contain it, while citing what the documents DO state about the topic.
     5. Maintain multi-turn conversational context (last 3 questions & answers).
     
     Returns:
@@ -456,9 +460,17 @@ def answer(index: DocIndex, question: str, history: Optional[List[Tuple[str, str
     context = "\n\n".join(f"[{h.get('doc', 'Doc')}, Page {h['page']}] {h['text']}" for h in hits)
     
     system_prompt = (
-        "Answer the question using ONLY the excerpts below. "
-        "Always cite the source document and pages using format like (Document Name, p. 3). "
-        "If the excerpts do not contain the answer, reply exactly: NOT_FOUND"
+        "You are an AI document intelligence assistant adhering strictly to grounded retrieval.\n"
+        "Answer the user's question using ONLY the provided excerpts below.\n"
+        "Always cite the source document and page numbers using format: (Document Name, p. X).\n\n"
+        "CRITICAL GROUNDING & HONESTY RULES:\n"
+        "1. Never extrapolate, speculate, or invent facts, numbers, dates, or statistics.\n"
+        "2. If the user asks for a specific statistic, percentage, or claim that is NOT present in the excerpts:\n"
+        "   - State clearly and directly that the documents do not provide or contain this statistic/claim.\n"
+        "   - Describe what the documents DO state about the topic, citing the relevant source document and page numbers.\n"
+        "   - Do NOT invent or guess any numbers (e.g. do NOT invent '60% of missions are fully autonomous').\n"
+        "3. ONLY if the excerpts have zero relevance or mention of the subject matter at all, reply: "
+        "'The uploaded documents do not contain information regarding this topic.' Do NOT use this phrase if the topic itself is discussed in the excerpts."
     )
     
     messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
@@ -470,10 +482,11 @@ def answer(index: DocIndex, question: str, history: Optional[List[Tuple[str, str
         
     messages.append({"role": "user", "content": f"Excerpts:\n{context}\n\nQuestion: {question}"})
 
-    out = _chat(messages)
+    out = _chat(messages, max_tokens=800)
     
-    # If the model explicitly stated it cannot find the answer in the excerpts
-    if out.strip().upper().startswith("NOT_FOUND"):
+    # If the model explicitly stated it cannot find the answer or topic in the excerpts
+    clean_out = out.strip()
+    if clean_out.upper().startswith("NOT_FOUND") or clean_out.startswith("The uploaded documents do not contain information regarding this topic"):
         return {"answer": NOT_FOUND_MSG, "supported": False, "sources": hits}
         
     return {"answer": out, "supported": True, "sources": hits}
