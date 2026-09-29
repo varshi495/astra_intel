@@ -187,7 +187,7 @@ Then open `.env` and set your values:
 GROQ_API_KEY=your_groq_api_key_here   # required
 
 # Optional — defaults shown
-LLM_MODEL=qwen/qwen3-8b
+LLM_MODEL=qwen/qwen3-8-27b
 LLM_BASE_URL=https://api.groq.com/openai/v1
 MIN_SCORE=0.10
 ```
