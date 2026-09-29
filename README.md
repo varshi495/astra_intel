@@ -40,7 +40,7 @@ Every response includes the exact page number and passage used, making answers f
 ### Additional Features
 | Feature | Details |
 |---|---|
-| **OCR Fallback** | Scanned/image-only PDFs are processed via Tesseract OCR automatically (200 DPI) |
+|  |
 | **Multi-Document Upload** | Upload and index multiple PDFs simultaneously; answers cite which document they came from |
 | **Auto-Summarisation** | 5–7 sentence document overview generated immediately on upload |
 | **Smart Question Chips** | LLM-generated starter questions shown after upload to help users explore the document |
