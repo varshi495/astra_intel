@@ -71,6 +71,7 @@ Every response includes the exact page number and passage used, making answers f
 ## 🏗️ Architecture
 
 ### High-Level Data Flow
+### THE DIAGRAM IS RECOMMENDED TO BE SEEN IN GIT HUB REPOSITORY, IT WILL NOT DISPLAY CORRECTLY HERE
 
 ```mermaid
 flowchart TD
