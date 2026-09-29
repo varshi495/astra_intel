@@ -45,7 +45,7 @@ def main() -> None:
     try:
         with open(pdf_path, "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
-        index = DocIndex(pdf_bytes, pdf_path)
+        index = DocIndex([(pdf_bytes, pdf_path)])
     except FileNotFoundError:
         print(f"Error: The PDF file '{pdf_path}' was not found.")
         sys.exit(1)

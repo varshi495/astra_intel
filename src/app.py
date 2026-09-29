@@ -181,14 +181,15 @@ with st.sidebar:
     st.divider()
     st.header("📂 Document")
     
-    uploaded_file = st.file_uploader("Upload or drag & drop a PDF", type=["pdf"])
+    uploaded_files = st.file_uploader("Upload or drag & drop PDFs", type=["pdf"], accept_multiple_files=True)
     
     # Trigger processing only when the user clicks 'Process document'
-    if uploaded_file and st.button("⚡ Process document", type="primary", use_container_width=True):
+    if uploaded_files and st.button("⚡ Process documents", type="primary", use_container_width=True):
         try:
             # 1. Chunk & embed the PDF locally
             with st.spinner("Reading, chunking and embedding…"):
-                ss.index = DocIndex(uploaded_file.getvalue(), uploaded_file.name)
+                docs = [(f.getvalue(), f.name) for f in uploaded_files]
+                ss.index = DocIndex(docs)
                 # Reset old conversation history when a new document is loaded
                 ss.history = []
                 ss.summary = None
@@ -207,7 +208,7 @@ with st.sidebar:
 
     # If a document is currently active, show document statistics and management
     if ss.index:
-        st.success(f"**{ss.index.name}**  \n{len(ss.index.pages)} pages · {len(ss.index.chunks)} chunks")
+        st.success(f"**{ss.index.name}**  \n{ss.index.pages} pages · {len(ss.index.chunks)} chunks")
         if st.button("🗑️ Clear chat", use_container_width=True):
             ss.history = []
             st.rerun()
@@ -231,7 +232,7 @@ if not ss.index:
                       color:#B8860B; font-size:0.9rem; margin-bottom:6px;">1 · Upload</div>
           <div style="font-family:'Inter',sans-serif; font-size:0.82rem;
                       color:#9AA0A8; line-height:1.55;">
-            Upload any PDF or scanned document via the sidebar.
+            Upload any PDFs or scanned documents via the sidebar.
           </div>
         </div>
 
@@ -293,7 +294,7 @@ if not ss.index:
       </div>
       <p style="font-family:'Inter',sans-serif; font-size:0.8rem; color:#4A5060;
                 margin-top:28px; text-align:center;">
-        ⬅️ &nbsp;Upload a PDF in the sidebar and click
+        ⬅️ &nbsp;Upload PDFs in the sidebar and click
         <strong style="color:#B8860B;">⚡ Process document</strong> to begin.
       </p>
     </div>

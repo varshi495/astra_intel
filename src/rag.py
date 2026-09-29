@@ -216,13 +216,22 @@ class DocIndex:
       If two texts mean similar things, their vectors will have a high similarity score (close to 1.0).
     """
 
-    def __init__(self, pdf_bytes: bytes, name: str = "document") -> None:
-        self.name: str = name
-        self.pages: List[Tuple[int, str]] = extract_pages(pdf_bytes)
-        self.chunks: List[Dict[str, Any]] = chunk_pages(self.pages)
+    def __init__(self, docs: List[Tuple[bytes, str]]) -> None:
+        self.chunks: List[Dict[str, Any]] = []
+        self.names: List[str] = [name for _, name in docs]
+        self.name: str = ", ".join(self.names)
+        self.pages: int = 0
+        
+        for pdf_bytes, name in docs:
+            pages = extract_pages(pdf_bytes)
+            self.pages += len(pages)
+            doc_chunks = chunk_pages(pages)
+            for c in doc_chunks:
+                c["doc"] = name
+            self.chunks.extend(doc_chunks)
         
         if not self.chunks:
-            raise DocError("No text passages could be extracted from this document.")
+            raise DocError("No text passages could be extracted from these documents.")
 
         texts = [c["text"] for c in self.chunks]
         
@@ -353,7 +362,7 @@ def summarize(index: DocIndex) -> str:
     sample_indices = sorted(set(int(i) for i in np.linspace(0, total_chunks - 1, sample_size)))
     
     context = "\n\n".join(
-        f"[Page {index.chunks[i]['page']}] {index.chunks[i]['text']}"
+        f"[{index.chunks[i].get('doc', 'Doc')}, Page {index.chunks[i]['page']}] {index.chunks[i]['text']}"
         for i in sample_indices
     )
     
@@ -388,7 +397,7 @@ def suggest_questions(index: DocIndex, n: int = 4) -> List[str]:
     sample_indices = sorted(set(int(i) for i in np.linspace(0, total_chunks - 1, sample_size)))
     
     context = "\n\n".join(
-        f"[Page {index.chunks[i]['page']}] {index.chunks[i]['text']}"
+        f"[{index.chunks[i].get('doc', 'Doc')}, Page {index.chunks[i]['page']}] {index.chunks[i]['text']}"
         for i in sample_indices
     )
     
@@ -444,11 +453,11 @@ def answer(index: DocIndex, question: str, history: Optional[List[Tuple[str, str
         return {"answer": NOT_FOUND_MSG, "supported": False, "sources": hits}
 
     # Format the retrieved excerpts
-    context = "\n\n".join(f"[Page {h['page']}] {h['text']}" for h in hits)
+    context = "\n\n".join(f"[{h.get('doc', 'Doc')}, Page {h['page']}] {h['text']}" for h in hits)
     
     system_prompt = (
         "Answer the question using ONLY the excerpts below. "
-        "Always cite the source pages using format like (p. 3). "
+        "Always cite the source document and pages using format like (Document Name, p. 3). "
         "If the excerpts do not contain the answer, reply exactly: NOT_FOUND"
     )
     

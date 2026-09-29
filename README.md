@@ -134,3 +134,17 @@ To test the retrieval accuracy on a sample document:
 ```bash
 python tests/eval.py path/to/document.pdf path/to/questions.json
 ```
+
+---
+
+## Attribution & Acknowledgments
+
+In accordance with competition rules, the following open-source resources, models, and libraries were used to build ASTRA INTEL:
+
+- **UI & Framework**: Built using [Streamlit](https://streamlit.io/).
+- **Embeddings**: Local embedding models powered by `all-MiniLM-L6-v2` via [SentenceTransformers](https://sbert.net/).
+- **LLM**: Text generation powered by the open-source **Qwen** model, accessed via the [Groq API](https://groq.com/).
+- **Document Processing**: PDF parsing with [PyMuPDF (fitz)](https://pymupdf.readthedocs.io/) and OCR with [Tesseract](https://github.com/tesseract-ocr/tesseract).
+- **Code**: All core application logic (`src/app.py`, `src/rag.py`) is original work created for this submission.
+
+*Note: No sensitive keys or `.env` files are committed to this repository.*
