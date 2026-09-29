@@ -195,7 +195,7 @@ MIN_SCORE=0.10
 | Variable | Default | Description |
 |---|---|---|
 | `GROQ_API_KEY` | *(required)* | Groq cloud API key |
-| `LLM_MODEL` | `qwen/qwen3-8b` | Model identifier passed to the API |
+| `LLM_MODEL` | `qwen/qwen3-8-27b` | Model identifier passed to the API |
 | `LLM_BASE_URL` | Groq endpoint | Swap to `http://localhost:11434/v1` for Ollama |
 | `MIN_SCORE` | `0.10` | Cosine similarity floor — queries below this score are rejected |
 
