@@ -1,29 +1,76 @@
-"""ASTRA INTEL - Streamlit UI. Run: streamlit run app.py"""
+"""
+ASTRA INTEL - Web Application Frontend (Streamlit)
+=================================================
+
+How Streamlit Works (A Primer for Beginners):
+----------------------------------------------
+Unlike traditional web frameworks (like Django, Flask, or React) where you manage
+client-server state and event loops manually, Streamlit executes your Python script
+from TOP to BOTTOM whenever:
+  1. The user first opens the web page.
+  2. The user interacts with any widget (clicks a button, uploads a file, types text).
+
+Why `st.session_state` is Essential:
+------------------------------------
+Because the script reruns from scratch on every interaction, normal local variables
+would be destroyed and reset! To remember things across reruns (such as:
+  - the parsed document index,
+  - conversation history,
+  - document summary,
+  - suggested questions),
+we store them in `st.session_state`. This is Streamlit's persistent dictionary.
+
+How to Run:
+-----------
+Run the following command from the root project folder:
+    streamlit run src/app.py
+"""
+
+from __future__ import annotations
+
+import html
+from typing import Any, Dict, List, Optional, Tuple
+
 import streamlit as st
 
+# Import our custom RAG engine functions and classes from src/rag.py
 from rag import DocError, DocIndex, answer, summarize, suggest_questions
 
-st.set_page_config(page_title="ASTRA INTEL", page_icon="🛰️", layout="wide")
+# Configure page metadata, browser tab title, favicon, and wide layout mode
+st.set_page_config(
+    page_title="ASTRA INTEL",
+    page_icon="🛰️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-# ── Custom CSS via st.html() (bypasses Streamlit's sanitiser) ─────────────────
+# ==============================================================================
+# Custom CSS / Theme Styling
+# ==============================================================================
+# We inject custom CSS to give ASTRA INTEL a tactical, military-grade dark aesthetic
+# featuring Space Grotesk (for headers) and Inter (for clean body typography),
+# accompanied by gold accent highlights (#B8860B).
 st.html("""
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* Global font & background */
+  /* Global typography & background */
   html, body, [class*="css"] { font-family: 'Inter', system-ui, sans-serif; }
   .stApp { background-color: #000000 !important; }
   header[data-testid="stHeader"] { background-color: transparent !important; }
 
-  /* Headings */
+  /* Headings with tactical military styling */
   h1, h2, h3, h4 {
     font-family: 'Space Grotesk', Arial, sans-serif !important;
     letter-spacing: 0.04em;
   }
 
-  /* Sidebar deeper background */
-  [data-testid="stSidebar"] { background-color: #000000 !important; border-right: 1px solid rgba(184,134,11,0.2) !important; }
+  /* Sidebar styling */
+  [data-testid="stSidebar"] {
+    background-color: #000000 !important;
+    border-right: 1px solid rgba(184,134,11,0.2) !important;
+  }
 
-  /* Primary button gold gradient */
+  /* Primary action button (Gold gradient) */
   .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #B8860B 0%, #7A5A08 100%) !important;
     color: #FFFFFF !important;
@@ -39,7 +86,7 @@ st.html("""
     box-shadow: 0 6px 20px rgba(184,134,11,0.4) !important;
   }
 
-  /* Secondary buttons (suggestion chips) */
+  /* Secondary buttons (Used for clickable suggestion chips) */
   .stButton > button[kind="secondary"] {
     background-color: #22282E !important;
     color: #B8860B !important;
@@ -54,7 +101,7 @@ st.html("""
     border-color: #B8860B !important;
   }
 
-  /* Chat bubbles */
+  /* Chat message bubble styling */
   [data-testid="stChatMessage"] {
     background-color: #22282E !important;
     border: 1px solid rgba(184,134,11,0.15) !important;
@@ -62,7 +109,7 @@ st.html("""
     padding: 12px !important;
   }
 
-  /* Chat input */
+  /* Chat input text box */
   [data-testid="stChatInputTextArea"] {
     background-color: #22282E !important;
     border: 1px solid #B8860B55 !important;
@@ -70,14 +117,14 @@ st.html("""
     color: #FFFFFF !important;
   }
 
-  /* Expander header */
+  /* Expandable source accordions */
   [data-testid="stExpander"] summary {
     font-family: 'Space Grotesk', sans-serif !important;
     font-weight: 600 !important;
     color: #B8860B !important;
   }
 
-  /* Scrollbar */
+  /* Custom gold scrollbar */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: #1B1F23; }
   ::-webkit-scrollbar-thumb { background: #B8860B66; border-radius: 4px; }
@@ -85,7 +132,9 @@ st.html("""
 </style>
 """)
 
-# ── Branded hero header ───────────────────────────────────────────────────────
+# ==============================================================================
+# Hero Header
+# ==============================================================================
 st.html("""
 <div style="
   display:flex; align-items:center; gap:16px;
@@ -112,41 +161,60 @@ st.html("""
 </div>
 """)
 
-# ── Session state ─────────────────────────────────────────────────────────────
+# ==============================================================================
+# Session State Initialization
+# ==============================================================================
+# `st.session_state` preserves variables across browser reruns.
+# .setdefault(key, default) only sets the value if it doesn't already exist.
 ss = st.session_state
-ss.setdefault("index", None)
-ss.setdefault("summary", None)
-ss.setdefault("history", [])
-ss.setdefault("suggested_questions", [])
-ss.setdefault("pending_question", None)
+ss.setdefault("index", None)                 # Holds the current DocIndex object
+ss.setdefault("summary", None)               # Holds the generated document summary string
+ss.setdefault("history", [])                 # List of chat turns: [{"q": ..., "a": ..., "sources": ...}]
+ss.setdefault("suggested_questions", [])     # List of AI-generated starter questions
+ss.setdefault("pending_question", None)      # Question clicked from suggestion chips
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ==============================================================================
+# Sidebar: Document Upload & Indexing Flow
+# ==============================================================================
 with st.sidebar:
     st.image("assets/astra_logo.jpeg", width="stretch")
     st.divider()
     st.header("📂 Document")
-    f = st.file_uploader("Upload a PDF", type=["pdf"])
-    if f and st.button("⚡ Process document", type="primary", use_container_width=True):
+    
+    uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
+    
+    # Trigger processing only when the user clicks 'Process document'
+    if uploaded_file and st.button("⚡ Process document", type="primary", use_container_width=True):
         try:
+            # 1. Chunk & embed the PDF locally
             with st.spinner("Reading, chunking and embedding…"):
-                ss.index = DocIndex(f.getvalue(), f.name)
+                ss.index = DocIndex(uploaded_file.getvalue(), uploaded_file.name)
+                # Reset old conversation history when a new document is loaded
                 ss.history = []
                 ss.summary = None
                 ss.suggested_questions = []
+
+            # 2. Automatically generate a concise overview summary
             with st.spinner("Summarizing…"):
                 ss.summary = summarize(ss.index)
+
+            # 3. Brainstorm questions to help the user start exploring
             with st.spinner("Generating suggested questions…"):
                 ss.suggested_questions = suggest_questions(ss.index)
+
         except DocError as e:
             st.error(str(e))
 
+    # If a document is currently active, show document statistics and management
     if ss.index:
         st.success(f"**{ss.index.name}**  \n{len(ss.index.pages)} pages · {len(ss.index.chunks)} chunks")
         if st.button("🗑️ Clear chat", use_container_width=True):
             ss.history = []
             st.rerun()
 
-# ── Guard ─────────────────────────────────────────────────────────────────────
+# ==============================================================================
+# Empty State: Landing Guide (shown when no document is uploaded yet)
+# ==============================================================================
 if not ss.index:
     st.html("""
     <div style="max-width:860px; margin:40px auto 0;">
@@ -230,38 +298,54 @@ if not ss.index:
       </p>
     </div>
     """)
+    # Stop further execution until the user uploads and processes a PDF
     st.stop()
 
-# ── Summary ───────────────────────────────────────────────────────────────────
+# ==============================================================================
+# Document Summary Section
+# ==============================================================================
 if ss.summary:
     with st.expander("📄 Document Summary", expanded=True):
         st.write(ss.summary)
 
-# ── Suggestion chips ──────────────────────────────────────────────────────────
+# ==============================================================================
+# Suggested Question Chips
+# ==============================================================================
+# Only show suggested question chips if the user hasn't started chatting yet
 if ss.suggested_questions and not ss.history:
     st.html("""<p style="
       font-family:'Space Grotesk',sans-serif; font-size:0.8rem; font-weight:600;
       color:#B8860B; letter-spacing:0.08em; text-transform:uppercase; margin:16px 0 8px;
     ">💡 Suggested questions — click to ask</p>""")
+    
     cols = st.columns(len(ss.suggested_questions))
     for i, sq in enumerate(ss.suggested_questions):
-        if cols[i].button(sq, key=f"sq_{i}"):
+        if cols[i].button(sq, key=f"sq_{i}", use_container_width=True):
             ss.pending_question = sq
             st.rerun()
 
-# ── Chat history ──────────────────────────────────────────────────────────────
+# ==============================================================================
+# Chat Conversation History
+# ==============================================================================
+# Renders all past Q&A turns stored in st.session_state.history
 for turn in ss.history:
     with st.chat_message("user"):
         st.write(turn["q"])
+        
     with st.chat_message("assistant"):
         st.write(turn["a"])
+        
         top_score = turn["sources"][0]["score"] if turn["sources"] else 0
         if turn["supported"]:
             st.caption("✅ Supported by document")
         else:
             st.caption(f"⚠️ Not supported by document · top similarity: {top_score:.3f} (threshold 0.10)")
+            
+        # Expandable inspection showing the exact passages used to answer
         with st.expander("📍 Sources — relevant passages & pages"):
             for s in turn["sources"]:
+                # Escape HTML special chars to prevent formatting glitches or XSS
+                safe_text = html.escape(s['text'][:420]) + ('&hellip;' if len(s['text']) > 420 else '')
                 st.html(f"""
                 <div style="display:flex;align-items:flex-start;gap:12px;
                             background:#1B1F23;border:1px solid rgba(184,134,11,0.2);
@@ -274,25 +358,37 @@ for turn in ss.history:
                   </div>
                   <div style="font-family:'Inter',sans-serif;font-size:0.82rem;
                               color:#C8CDD4;line-height:1.6;">
-                    {s['text'][:420]}{'&hellip;' if len(s['text']) > 420 else ''}
+                    {safe_text}
                   </div>
                 </div>
                 """)
                 st.caption(f"Similarity: `{s['score']:.3f}`")
 
-# ── Chat input ────────────────────────────────────────────────────────────────
-q = st.chat_input("Ask something about the document…")
+# ==============================================================================
+# Chat Input & Answer Generation Flow
+# ==============================================================================
+user_input = st.chat_input("Ask something about the document…")
 
+# If the user clicked a suggestion chip instead of typing, prioritize it
 if ss.pending_question:
-    q = ss.pending_question
+    user_input = ss.pending_question
     ss.pending_question = None
 
-if q:
+if user_input:
     try:
         with st.spinner("Searching and answering…"):
-            past = [(t["q"], t["a"]) for t in ss.history]
-            res = answer(ss.index, q, past)
-        ss.history.append({"q": q, "a": res["answer"], "supported": res["supported"], "sources": res["sources"]})
+            # Provide recent conversation turns (question, answer) for context
+            past_turns = [(t["q"], t["a"]) for t in ss.history]
+            result = answer(ss.index, user_input, past_turns)
+
+        # Append new exchange to history and rerun so it renders immediately
+        ss.history.append({
+            "q": user_input,
+            "a": result["answer"],
+            "supported": result["supported"],
+            "sources": result["sources"],
+        })
         st.rerun()
     except DocError as e:
         st.error(str(e))
+

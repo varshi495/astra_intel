@@ -65,9 +65,19 @@ A lightweight script used to benchmark the retrieval engine's performance.
 
 ### 2. Installation
 
-Clone the repository and install the required dependencies:
+Clone the repository and set up a virtual environment before installing the required dependencies:
 
 ```bash
+# Create a virtual environment
+python -m venv .venv
+
+# Activate the virtual environment
+# On Windows:
+.venv\Scripts\activate
+# On macOS/Linux:
+source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
