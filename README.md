@@ -1,4 +1,4 @@
-﻿#  ASTRA INTEL
+#  ASTRA INTEL
 
 > **Armed Squad for Tactical Readiness & Awareness**
 > Defence document intelligence — answers grounded strictly in your document.
@@ -40,7 +40,6 @@ Every response includes the exact page number and passage used, making answers f
 ### Additional Features
 | Feature | Details |
 |---|---|
-|  |
 | **Multi-Document Upload** | Upload and index multiple PDFs simultaneously; answers cite which document they came from |
 | **Auto-Summarisation** | 5–7 sentence document overview generated immediately on upload |
 | **Smart Question Chips** | LLM-generated starter questions shown after upload to help users explore the document |
@@ -180,8 +179,9 @@ copy .env.example .env
 # macOS / Linux
 cp .env.example .env
 ```
-
+## Get Groq api key from [https://console.groq.com/keys](https://console.groq.com/keys)
 Then open `.env` and set your values:
+
 
 ```env
 GROQ_API_KEY=your_groq_api_key_here   # required
@@ -232,6 +232,7 @@ python tests/eval.py path/to/document.pdf tests/eval_questions.example.json
 - Every answer is **auditable**: the exact passage and page number are always shown
 
 ### AI Pipeline
+### Recommended to see in github
 
 ```
 PDF bytes
