@@ -455,7 +455,6 @@ I couldn't find this in the uploaded document.
 
 All core application logic (`src/app.py`, `src/rag.py`, `tests/eval.py`) is original work.
 
-> **Security note:** No `.env` files or API keys are committed to this repository. See `.gitignore`.
 
 ---
 
