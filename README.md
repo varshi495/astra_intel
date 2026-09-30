@@ -160,9 +160,9 @@ cd astra_intel
 python -m venv .venv
 
 # Windows
-# the activation may not work on some machines try to activate it manually
 
 .venv\Scripts\activate
+# the activation may not work on some machines try to activating it manually
 
 # macOS / Linux
 source .venv/bin/activate
