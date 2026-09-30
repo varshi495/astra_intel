@@ -7,7 +7,7 @@
 The following AI-assisted development tools were used during the development of ASTRA INTEL:
 
 * **ChatGPT** — Used for debugging, understanding concepts and APIs, generating code suggestions, and preparing documentation.
-* **Claude** — Used for code analysis, debugging, understanding project architecture, and improving implementation ideas.
+* **Claude** — Used for code analysis, debugging, and improving implementation ideas.
 * **Antigravity IDE** — Used for code completion, code suggestions, and accelerating development.
 
 ### Areas of Usage
