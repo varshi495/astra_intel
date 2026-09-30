@@ -1,4 +1,4 @@
-#  ASTRA INTEL
+﻿#  ASTRA INTEL
 
 > **Armed Squad for Tactical Readiness & Awareness**
 > Defence document intelligence — answers grounded strictly in your document.
@@ -160,7 +160,10 @@ cd astra_intel
 python -m venv .venv
 
 # Windows
+# the activation may not work on some machines try to activate it manually
+
 .venv\Scripts\activate
+
 # macOS / Linux
 source .venv/bin/activate
 ```
