@@ -1,4 +1,4 @@
-﻿#  ASTRA INTEL
+#  ASTRA INTEL
 
 > **Armed Squad for Tactical Readiness & Awareness**
 > Defence document intelligence — answers grounded strictly in your document.
@@ -69,8 +69,99 @@ Every response includes the exact page number and passage used, making answers f
 
 ## 🏗️ Architecture
 
+```text
+  ASTRA INTEL
+
+ ┌──────────────┐
+ │     USER     │
+ │ PDF + Query  │
+ └──────┬───────┘
+        │
+        ▼
+┌────────────────────┐
+│     STREAMLIT      │
+│     FRONTEND       │
+│ Upload + Chat UI   │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│   PYTHON BACKEND   │
+│      rag.py        │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ DOCUMENT PROCESSING│
+│                    │
+│ PyMuPDF            │
+│ OCR / Tesseract    │
+│ Text Chunking      │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ EMBEDDING MODEL    │
+│                    │
+│ MiniLM-L6-v2       │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ VECTOR INDEX       │
+│                    │
+│ NumPy In-Memory    │
+│ Embeddings         │
+└─────────┬──────────┘
+          │
+          │ User Question
+          ▼
+┌────────────────────┐
+│ RETRIEVAL          │
+│                    │
+│ Query Embedding    │
+│       ↓            │
+│ Similarity Search  │
+│       ↓            │
+│ Top-K Chunks       │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│       RAG          │
+│                    │
+│ Context + Query    │
+│ + Chat History     │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│      GROQ API      │
+│                    │
+│     QWEN LLM       │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│ RESULT PROCESSING  │
+│                    │
+│ Answer + Citations │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│     STREAMLIT      │
+│     FRONTEND       │
+└─────────┬──────────┘
+          │
+          ▼
+       ┌──────┐
+       │ USER │
+       └──────┘
+```
+
 ### High-Level Data Flow
-### THE DIAGRAM IS RECOMMENDED TO BE SEEN IN GIT HUB REPOSITORY, IT WILL NOT DISPLAY CORRECTLY IN IDE
+> **Note:** The Mermaid diagram below is best viewed on GitHub.
 
 ```mermaid
 flowchart TD
